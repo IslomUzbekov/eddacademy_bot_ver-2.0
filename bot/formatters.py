@@ -3,13 +3,13 @@ from html import escape
 
 def get_course_badges(course: dict) -> str:
     if course.get("is_free"):
-        return "🟩 Free course"
+        return "🟩 Kurs bepul"
     if course.get("is_career_path"):
-        return "🟦 Career path"
+        return "🟦 Kasb uchun"
     if course.get("is_skill_path"):
-        return "🟪 Skill path"
+        return "🟪 Skill uchun"
     if course.get("is_cert_path"):
-        return "🟨 Certification path"
+        return "🟨 Sertifikatlangan"
     return "⬜ Course"
 
 
@@ -19,7 +19,7 @@ def format_course(course: dict, rating: float) -> str:
     desc = (course.get("description") or "").strip()
     short = desc[:220] + ("..." if len(desc) > 220 else "")
 
-    level = course.get("level") or "Beginner"
+    level = course.get("level") or "Boshlang'ich"
     duration = course.get("duration") or "-"
     price = course.get("price") or "-"
 
@@ -29,23 +29,23 @@ def format_course(course: dict, rating: float) -> str:
     dots = "-" * 26
 
     lines = []
-    lines.append(f"<code>{badge:}          | Rating: {rating:.1f}</code>")
+    lines.append(f"<code>{badge:}   | Reytingi: {rating:.1f}</code>")
     lines.append("")
     lines.append(f"<b>{title}</b>")
     lines.append(short)
     lines.append("")
-    lines.append(f"Narx: <b>{price} so'm</b>")
+    lines.append(f"Narxi: <b>{price} so'm</b>")
 
     if includes_courses > 1:
         lines.append(dots)
-        lines.append(f"Includes: <b>{includes_courses} Courses</b>")
+        lines.append(f"Jami: <b>{includes_courses}</b> kursdan iborat")
 
     if has_certificate:
         lines.append(dots)
-        lines.append("🏅 With <b>Certificate</b>")
+        lines.append("🏅 <b>Sertifikat</b> beriladi")
 
     lines.append(dots)
-    lines.append(f"<code><b>{level:}</b>          | <b>{duration} oy</b></code>")
+    lines.append(f"<code><b>{level:}</b>   | <b>{duration} oy</b></code>")
 
     return "\n".join(lines)
 

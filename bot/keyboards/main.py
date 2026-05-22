@@ -8,5 +8,6 @@ def get_main_menu():
         [KeyboardButton(text="📝 Kursga yozilish")],
         [KeyboardButton(text="🏫 Biz haqimizda")],
         [KeyboardButton(text="❓ FAQ")],
+        [KeyboardButton(text="🗫 Kommentlar")],
     ]
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)

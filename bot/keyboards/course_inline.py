@@ -18,6 +18,14 @@ def get_course_keyboard(page: int, course_id: int, total_courses: int):
         rows.append(nav_row)
 
     rows.append(
+        [
+            InlineKeyboardButton(
+                text="⭐ Kursni baholash", callback_data=f"review_course_{course_id}"
+            )
+        ]
+    )
+
+    rows.append(
         [InlineKeyboardButton(text="📝 Yozilish", callback_data=f"apply_{course_id}")]
     )
 

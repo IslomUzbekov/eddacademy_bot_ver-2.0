@@ -7,8 +7,17 @@ class About(models.Model):
     section = models.CharField(
         max_length=100,
         blank=True,
-    )  # для history, teachers, partners, achievements, reviews и т.д.
-    order = models.PositiveIntegerField(default=0)  # для сортировки в админке
+    )
+    order = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title
+
+
+class InstitutionReview(models.Model):
+    user_id = models.CharField(max_length=100)
+    review = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.user_id

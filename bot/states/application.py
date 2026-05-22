@@ -1,4 +1,3 @@
-
 from aiogram.fsm.state import State, StatesGroup
 
 
@@ -8,3 +7,13 @@ class ApplicationStates(StatesGroup):
     age = State()
     course = State()
     confirm = State()
+
+
+class CourseStates(StatesGroup):
+    page = State()
+
+
+class ReviewStates(StatesGroup):
+    institution_text = State()
+    course_score = State()
+    course_text = State()

@@ -1,7 +1,7 @@
 from django.db.models import Avg
 from rest_framework import serializers
 
-from .models import Course
+from .models import Course, CourseReview
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -12,5 +12,12 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_rating(self, obj):
-        avg = obj.ratings.aggregate(avg=Avg("score"))["avg"]
+        avg = obj.course_review.aggregate(avg=Avg("score"))["avg"]
         return round(avg, 1) if avg is not None else 0.0
+
+
+class CourseReviewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CourseReview
+        fields = "__all__"

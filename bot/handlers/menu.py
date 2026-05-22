@@ -1,14 +1,13 @@
+import logging
+
 from aiogram import types
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from formatters import format_course
 from keyboards.course_inline import get_confirm_keyboard, get_course_keyboard
 from services.api import ApiService
-from states.application import ApplicationStates
+from states.application import ApplicationStates, CourseStates, ReviewStates
 
-
-class CourseStates(StatesGroup):
-    page = State()
+logger = logging.getLogger(__name__)
 
 
 async def courses_handler(message: types.Message, state: FSMContext):
@@ -36,28 +35,7 @@ async def show_course_page(message: types.Message, page: int, state: FSMContext)
     caption = format_course(course, rating)
     kb = get_course_keyboard(page, course["id"], len(courses))
 
-    # photo_url = (
-    #     course.get("photo")
-    #     or course.get("image")
-    #     or course.get("image_url")
-    #     or PLACEHOLDER_URL
-    # )
-    # if not str(photo_url).startswith(("http://", "https://")):
-    #     photo_url = PLACEHOLDER_URL
-    # try:
-    #     if photo_url:
-    #         await message.bot.send_photo(
-    #             chat_id=message.chat.id,
-    #             photo=photo_url,
-    #             caption=caption,
-    #             parse_mode="HTML",
-    #             reply_markup=kb,
-    #         )
-    #     else:
-    #         await message.answer(caption, parse_mode="HTML", reply_markup=kb)
-    # except Exception:
     await message.answer(caption, parse_mode="HTML", reply_markup=kb)
-
     await state.update_data(page=page, current_course_id=course["id"])
 
 
@@ -142,6 +120,7 @@ async def course_handler(message: types.Message, state: FSMContext):
         reply_markup=get_confirm_keyboard(),
     )
 
+
 async def confirm_callback(callback: types.CallbackQuery, state: FSMContext):
     if callback.data == "confirm_no":
         await state.clear()
@@ -169,51 +148,6 @@ async def confirm_callback(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer()
 
-# async def confirm_handler(message: types.Message, state: FSMContext):
-#     answer = message.text.strip().lower()
-#     if answer not in {"ha", "yo'q", "yoq", "yes", "no"}:
-#         await message.answer(
-#             "Iltimos, `ha` yoki `yo'q` deb javob bering.", parse_mode="Markdown"
-#         )
-#         return
-
-#     if answer in {"yo'q", "yoq", "no"}:
-#         await state.clear()
-#         await message.answer("Ariza bekor qilindi.")
-#         return
-
-#     data = await state.get_data()
-#     payload = {
-#         "full_name": data["full_name"],
-#         "phone": data["phone"],
-#         "age": data["age"],
-#         "course": data.get("selected_course_id"),
-#         "comment": f"Requested course: {data['course']}",
-#     }
-#     created = ApiService.post_application(payload)
-
-#     if not created:
-#         await message.answer(
-#             "Ariza yuborishda xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring."
-#         )
-#         await state.clear()
-#         return
-
-#     bot = message.bot
-#     try:
-#         await bot.send_message(
-#             settings.ADMIN_CHAT_ID,
-#             "📥 Yangi ariza:\n\n"
-#             f"FIO: {data['full_name']}\n"
-#             f"Telefon: {data['phone']}\n"
-#             f"Yosh: {data['age']}\n"
-#             f"Kurs: {data['course']}",
-#         )
-#     except Exception:
-#         pass
-#     await message.answer("Arizangiz qabul qilindi. Tez orada siz bilan bog'lanamiz.")
-#     await state.clear()
-
 
 async def course_callback(callback: types.CallbackQuery, state: FSMContext):
     action = callback.data
@@ -240,4 +174,65 @@ async def course_callback(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(ApplicationStates.full_name)
         await callback.message.answer("FIO kiriting:")
 
+    elif action.startswith("review_course_"):
+        course_id = int(action.split("_")[-1])
+        await state.update_data(review_course_id=course_id)
+        await state.set_state(ReviewStates.course_score)
+        await callback.message.answer("Kursni 1 dan 5 gacha baholang:")
+
     await callback.answer()
+
+
+async def institution_review_start(message: types.Message, state: FSMContext):
+    await state.set_state(ReviewStates.institution_text)
+    await message.answer("O'quv markazi haqida uz fikringizni qoldiring:")
+
+
+async def institution_review_text(message: types.Message, state: FSMContext):
+    text = message.text.strip()
+
+    payload = {
+        "user_id": str(message.from_user.id),
+        "review": text,
+    }
+    logger.debug("Institution review payload: %s", payload)
+    saved = ApiService.post_institution_review(payload)
+
+    if saved:
+        await message.answer("Rahmat, sizning fikringiz qabul qilindi!")
+    else:
+        await message.answer("Ma'lumotni saqlashda xatolik yuz berdi.")
+
+    await state.clear()
+
+
+async def course_review_score(message: types.Message, state: FSMContext):
+    text = (message.text or "").strip()
+    if text not in {"1", "2", "3", "4", "5"}:
+        await message.answer("Iltimos, 1 dan 5 gacha raqam yuboring.")
+        return
+
+    await state.update_data(course_score=int(text))
+    await state.set_state(ReviewStates.course_text)
+    await message.answer("Endi kurs haqida izoh qoldiring:")
+
+
+async def course_review_text(message: types.Message, state: FSMContext):
+    text = (message.text or "").strip()
+    data = await state.get_data()
+
+    payload = {
+        "course": int(data["review_course_id"]),
+        "user_id": str(message.from_user.id),
+        "score": int(data["course_score"]),
+        "comment": text,
+    }
+
+    logger.debug("Course review payload: %s", payload)
+    saved = ApiService.post_course_review(payload)
+    if saved:
+        await message.answer("Rahmat! Kurs bo'yicha fikringiz saqlandi.")
+    else:
+        await message.answer("Xatolik yuz berdi. Keyinroq qayta urinib ko'ring.")
+
+    await state.clear()
