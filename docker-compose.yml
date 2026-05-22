@@ -42,27 +42,27 @@ services:
       - backend
       - redis
 
-  # celery:
-  #   build: ./backend
-  #   command: celery -A eddacademy worker --loglevel=INFO
-  #   volumes:
-  #     - ./backend:/usr/src/app
-  #   env_file:
-  #     - .env.example
-  #   depends_on:
-  #     - db
-  #     - redis
+  celery:
+    build: ./backend
+    command: celery -A eddacademy worker --loglevel=INFO
+    volumes:
+      - ./backend:/usr/src/app
+    env_file:
+      - .env.example
+    depends_on:
+      - db
+      - redis
 
-  # celery-beat:
-  #   build: ./backend
-  #   command: celery -A eddacademy beat --loglevel=INFO
-  #   volumes:
-  #     - ./backend:/usr/src/app
-  #   env_file:
-  #     - .env.example
-  #   depends_on:
-  #     - db
-  #     - redis
+  celery-beat:
+    build: ./backend
+    command: celery -A eddacademy beat --loglevel=INFO
+    volumes:
+      - ./backend:/usr/src/app
+    env_file:
+      - .env.example
+    depends_on:
+      - db
+      - redis
 
 volumes:
   postgres_data:
